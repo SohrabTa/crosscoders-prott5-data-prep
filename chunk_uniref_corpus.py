@@ -122,8 +122,11 @@ def main():
     print(json.dumps(manifest, indent=2))
     print(f"\nglobal_num_steps_one_epoch = {manifest['global_num_steps_one_epoch']:,} "
           f"(set train.num_steps to this)")
+    # 20.8 steps/s sustained (measured 2026-07-04 on the <=512 corpus, bs128, fp32,
+    # AuxK active) = ~74,880 steps/h. This is the harvest-bound SUSTAINED rate
+    # (steps/elapsed), NOT the tqdm instantaneous peak.
     print(f"per-chunk steps ~ {chunks[0]['steps_one_epoch']:,} "
-          f"(~{chunks[0]['steps_one_epoch']/81300:.1f} h at 81.3k steps/h)")
+          f"(~{chunks[0]['steps_one_epoch']/74880:.1f} h at 74.9k steps/h sustained)")
 
 
 if __name__ == "__main__":
