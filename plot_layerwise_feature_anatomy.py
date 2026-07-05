@@ -9,6 +9,7 @@ y-axis: feature decoder norm at each layer, per-feature max-normalized to [0,1]
 color : concept category of the feature's best (per-domain-F1) pairing
 """
 
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -16,11 +17,30 @@ import pandas as pd
 import torch
 
 ROOT = Path("/Users/sohrab.tawana/private/crosscoder")
-CKPT = ROOT / "model_checkpoints/crosscoder_l8192_k32_bs512_full_2026-03-12_06-03-41/crashed_epoch_0_step_2519836/model.pt"
-PAIRINGS = ROOT / "data/crosscoder_eval/pre-auxfix/real/uniprotkb_modern_score45_67k/test_counts/heldout_all_top_pairings.csv"
+
+# Variant selector. auxfix = the AuxK-fix re-run (the hand-in, 61 concepts / 409 features);
+# pre-auxfix = the superseded original run (51 concepts / 219 features), kept reproducible.
+# Override with VARIANT=pre-auxfix in the environment.
+VARIANT = os.environ.get("VARIANT", "auxfix")
+
+_PATHS = {
+    "pre-auxfix": dict(
+        ckpt="model_checkpoints/crosscoder_l8192_k32_bs512_full_2026-03-12_06-03-41/crashed_epoch_0_step_2519836/model.pt",
+        pairings="data/crosscoder_eval/pre-auxfix/real/uniprotkb_modern_score45_67k/test_counts/heldout_all_top_pairings.csv",
+        suffix="",
+    ),
+    "auxfix": dict(
+        ckpt="model_checkpoints/crosscoder_l8192_k32_bs512_full_auxfix_2026-06-06_07-04-40/final_epoch_0_step_2519836/model.pt",
+        pairings="data/crosscoder_eval/auxfix/real/uniprotkb_modern_score45_67k/test_counts/heldout_all_top_pairings.csv",
+        suffix="_auxfix",
+    ),
+}
+_cfg = _PATHS[VARIANT]
+CKPT = ROOT / _cfg["ckpt"]
+PAIRINGS = ROOT / _cfg["pairings"]
 OUTDIR = ROOT / "data/figures"
-OUT = OUTDIR / "layerwise_feature_anatomy.png"
-OUT_FACET = OUTDIR / "layerwise_feature_anatomy_faceted.png"
+OUT = OUTDIR / f"layerwise_feature_anatomy{_cfg['suffix']}.png"
+OUT_FACET = OUTDIR / f"layerwise_feature_anatomy_faceted{_cfg['suffix']}.png"
 OUTDIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -105,8 +125,23 @@ def main():
     plt.close(fig)
 
     print(f"wrote {OUT}\nwrote {OUT_FACET}")
-    print(f"{len(best)} concept-paired features across {len(order)} categories")
+    print(f"variant={VARIANT}  {len(best)} concept-paired features across {len(order)} categories")
     print(counts.to_string())
+
+    # Per-category peak layer: argmax of the per-category mean normalized decoder-norm
+    # profile (only where n >= 3, matching the bold mean line). Anchors the outline's
+    # qualitative "where each concept category lives" claims to computed output.
+    print("\nper-category peak layer (argmax of mean profile, n>=3):")
+    rows = []
+    for cat in order:
+        ids = feats(cat)
+        if len(ids) < 3:
+            continue
+        mean_profile = norms[ids].mean(0)
+        peak = int(mean_profile.argmax()) + 1          # 1-indexed layer
+        rows.append((cat, int(counts[cat]), peak))
+    for cat, n, peak in sorted(rows, key=lambda r: r[2]):
+        print(f"  {cat:<20} n={n:<4} peak≈layer {peak}")
 
 
 if __name__ == "__main__":
