@@ -24,15 +24,16 @@ MOUNTS="${MOUNTS},${CKPT_DIR}:/workspace/model_checkpoints"
 MOUNTS="${MOUNTS},${CROSSCODE_DIR}:/workspace/crosscode"
 MOUNTS="${MOUNTS},${SCC_DIR}:/workspace/scc"
 
-# --- re-run override (defaults = original full run). Export the new FULL checkpoint
-#     and the FULL-model pairings produced by submit_eval.sh:
-#       export RERUN_FULL_CKPT=/workspace/model_checkpoints/<new_full>/<final_or_crashed>_epoch_0_step_2519836
-#       export RERUN_PAIRINGS=/workspace/InterPLM/results/crosscoder_eval/uniprotkb_modern_score45_67k/test_counts/heldout_all_top_pairings.csv
-CROSSCODER_DIR="${RERUN_FULL_CKPT:-/workspace/model_checkpoints/crosscoder_l8192_k32_bs512_full_2026-03-12_06-03-41/crashed_epoch_0_step_2519836}"
-PAIRINGS="${RERUN_PAIRINGS:-/workspace/InterPLM/results/crosscoder_eval/uniprotkb_modern_score45_67k/test_counts/heldout_all_top_pairings.csv}"
-MATCHES="/workspace/data/proteingym/concept_matches.csv"
+# --- auxfix full run (the hand-in checkpoint). Paths are hardcoded so this script
+#     records exactly what the hand-in ProteinGym pooled-metrics were run on (git-tracked).
+#     Pre-auxfix originals (superseded, NOT the hand-in):
+#       ckpt    crosscoder_l8192_k32_bs512_full_2026-03-12_06-03-41/crashed_epoch_0_step_2519836
+#       matches concept_matches.csv   output pooled_metrics/
+CROSSCODER_DIR="/workspace/model_checkpoints/crosscoder_l8192_k32_bs512_full_auxfix_2026-06-06_07-04-40/jumprelu_global_2519836"
+PAIRINGS="/workspace/data/crosscoder_eval/auxfix/uniprotkb_modern_score45_67k/test_counts/heldout_all_top_pairings.csv"
+MATCHES="/workspace/data/proteingym/concept_matches_auxfix.csv"
 DMS_DIR="/workspace/data/DMS_ProteinGym_substitutions"
-OUTPUT_DIR="/workspace/data/proteingym/pooled_metrics"
+OUTPUT_DIR="/workspace/data/proteingym/pooled_metrics_auxfix"
 
 export HF_HOME="/workspace/data/hf_home"
 export PYTHONPATH="/workspace/InterPLM"
