@@ -27,9 +27,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import argparse
+
 from scipy.stats import spearmanr
 
 ROOT = Path("/Users/sohrab.tawana/private/crosscoder")
+# Defaults are the pre-auxfix pooled harvest (preserved for reproducibility of the original run).
+# Pass --variant auxfix (or explicit --pooled_dir/--output) to score the AuxK-fixed harvest.
 POOLED = ROOT / "data/proteingym/pooled_metrics"
 OUT = ROOT / "data/proteingym/per_residue_holdout_summary.csv"
 MIN_SUBS = 10      # MotifAE: residues with >=10 assayed substitutions
@@ -39,9 +43,25 @@ SEED = 0
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--variant", choices=["pre-auxfix", "auxfix"], default="pre-auxfix",
+                    help="'auxfix' reads pooled_metrics_auxfix/ and writes "
+                    "per_residue_holdout_summary_auxfix.csv. Explicit paths override.")
+    ap.add_argument("--pooled_dir", type=Path, default=None)
+    ap.add_argument("--output", type=Path, default=None)
+    args = ap.parse_args()
+    pg = ROOT / "data/proteingym"
+    if args.variant == "auxfix":
+        pooled = args.pooled_dir or pg / "pooled_metrics_auxfix"
+        out_path = args.output or pg / "per_residue_holdout_summary_auxfix.csv"
+    else:
+        pooled = args.pooled_dir or POOLED
+        out_path = args.output or OUT
+    print(f"variant={args.variant}  pooled_dir={pooled}")
+
     rng = np.random.default_rng(SEED)
     rows = []
-    for p in sorted(POOLED.glob("*__pooled.parquet")):
+    for p in sorted(pooled.glob("*__pooled.parquet")):
         dms_id = p.stem.replace("__pooled", "")
         df = pd.read_parquet(p)
         df = df[df["n_mutations"] == 1].copy()
@@ -94,8 +114,8 @@ def main() -> None:
                      "holdout_train_sel": train_sel, "holdout_test_sel": test_sel})
 
     out = pd.DataFrame(rows)
-    out.to_csv(OUT, index=False)
-    print(f"wrote {OUT} ({len(out)} assays)\n")
+    out.to_csv(out_path, index=False)
+    print(f"wrote {out_path} ({len(out)} assays)\n")
     print("A) per-residue MotifAE-comparable (best paired feature per assay):")
     v = out["per_residue_best"].dropna()
     print(f"   median |rho| = {v.median():.3f}  (n={len(v)} assays, >0.3={int((v>0.3).sum())}, >0.5={int((v>0.5).sum())})")

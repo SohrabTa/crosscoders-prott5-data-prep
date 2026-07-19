@@ -36,6 +36,7 @@ Outputs:
 
 Seed: 0 (only used for the permutation null). Reproducible.
 """
+import argparse
 import sys
 from pathlib import Path
 import numpy as np
@@ -69,18 +70,42 @@ CONCEPT_CATEGORY = {
 ROOT = Path(__file__).resolve().parents[2]
 if not (ROOT / "data").exists():
     ROOT = Path.cwd()
-SUMMARY = ROOT / "data" / "proteingym" / "pooled_metrics" / "summary.csv"
 REF = ROOT / "data" / "external" / "DMS_substitutions.csv"
+# Defaults are the pre-auxfix paths (preserved for reproducibility of the original run).
+# Pass --variant auxfix (or the explicit path args) to score the AuxK-fixed pooled harvest.
+SUMMARY = ROOT / "data" / "proteingym" / "pooled_metrics" / "summary.csv"
 OUT_PAIR = ROOT / "data" / "proteingym" / "category_specificity_pairings.csv"
 OUT_SUM = ROOT / "data" / "proteingym" / "category_specificity_summary.csv"
 
 
 def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--variant", choices=["pre-auxfix", "auxfix"], default="pre-auxfix",
+                    help="Shortcut selecting the pooled harvest + output suffix. "
+                    "'auxfix' reads pooled_metrics_auxfix/summary.csv and writes "
+                    "category_specificity_*_auxfix.csv. Explicit path args override.")
+    ap.add_argument("--summary", type=Path, default=None,
+                    help="pooled_metrics summary.csv to score (overrides --variant).")
+    ap.add_argument("--out_pair", type=Path, default=None)
+    ap.add_argument("--out_sum", type=Path, default=None)
+    args = ap.parse_args()
+
+    pg = ROOT / "data" / "proteingym"
+    if args.variant == "auxfix":
+        summary = args.summary or pg / "pooled_metrics_auxfix" / "summary.csv"
+        out_pair = args.out_pair or pg / "category_specificity_pairings_auxfix.csv"
+        out_sum = args.out_sum or pg / "category_specificity_summary_auxfix.csv"
+    else:
+        summary = args.summary or SUMMARY
+        out_pair = args.out_pair or OUT_PAIR
+        out_sum = args.out_sum or OUT_SUM
+    print(f"variant={args.variant}  summary={summary}")
+
     ref = pd.read_csv(REF, usecols=["DMS_id", "coarse_selection_type"])
     ref["coarse_selection_type"] = ref["coarse_selection_type"].astype(str).str.strip()
     cat_by_dms = dict(zip(ref["DMS_id"], ref["coarse_selection_type"]))
 
-    df = pd.read_csv(SUMMARY, usecols=["DMS_id", "concept", "feature", "pool_mean_abs"])
+    df = pd.read_csv(summary, usecols=["DMS_id", "concept", "feature", "pool_mean_abs"])
     df["concept"] = df["concept"].astype(str).str.strip()
     # merge the two near-duplicate glycosylation labels into one concept
     df.loc[df["concept"].str.startswith("Glycosylation"), "concept"] = "Glycosylation"
@@ -102,7 +127,7 @@ def main():
               .reset_index())
     pair["concept_category"] = pair["concept"].map(CONCEPT_CATEGORY)
     pair["matched"] = pair["category"] == pair["concept_category"]
-    pair.to_csv(OUT_PAIR, index=False)
+    pair.to_csv(out_pair, index=False)
 
     def run(metric_col):
         m = pair.loc[pair["matched"], metric_col].to_numpy()
@@ -144,7 +169,7 @@ def main():
             "mismatched_mean_absrho": round(cmm.mean(), 4) if len(cmm) else np.nan,
         })
     per_concept = pd.DataFrame(rows)
-    per_concept.to_csv(OUT_SUM, index=False)
+    per_concept.to_csv(out_sum, index=False)
 
     pd.set_option("display.width", 170, "display.max_columns", 20)
     print("=== ProteinGym category-specificity test ===")
@@ -160,7 +185,7 @@ def main():
         print(f"  Mann-Whitney (matched > mismatched): U={r['u']:.1f}, one-sided p={r['u_p']:.4f}")
         print(f"  label-permutation null: p={r['perm_p']:.4f} "
               f"(null mean={r['perm_mean']:+.4f}, p95={r['perm_p95']:+.4f})")
-    print(f"\nWrote {OUT_PAIR.name}, {OUT_SUM.name}")
+    print(f"\nWrote {out_pair.name}, {out_sum.name}")
 
 
 if __name__ == "__main__":
