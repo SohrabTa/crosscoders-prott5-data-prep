@@ -20,6 +20,7 @@ INTERPLM_DIR="/dss/dsshome1/08/ga25ley2/code/InterPLM"
 CROSSCODE_DIR="/dss/dsshome1/08/ga25ley2/code/crosscode"
 SCC_DIR="/dss/dsshome1/08/ga25ley2/code/sparse-crosscoders-prott5"
 DATA_DIR="/dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/data"
+HF_HOME_HOST="/dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/hf_home"
 CKPT_DIR="/dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/model_checkpoints"
 
 MOUNTS="${INTERPLM_DIR}:/workspace/InterPLM"
@@ -34,12 +35,15 @@ CROSSCODER_DIR="${RERUN_FULL_CKPT:-/workspace/model_checkpoints/crosscoder_l8192
 # EVAL-INDEPENDENT assay list (all 217 from the ProteinGym reference), built below.
 # NOT concept_matches.csv: that is derived from InterPLM pairings, which would
 # condition the assay set on the eval. See build_proteingym_matches.py.
-REFERENCE="/workspace/data/DMS_substitutions.csv"
+REFERENCE="/workspace/data/external/DMS_substitutions.csv"
 MATCHES="/workspace/data/proteingym_full_feature_matches.csv"
-DMS_DIR="/workspace/data/DMS_ProteinGym_substitutions"
+DMS_DIR="/workspace/data/external/DMS_ProteinGym_substitutions"
 OUTPUT_DIR="/workspace/data/proteingym/full_feature_spearman_baseline_auxfix"
+MOUNTS="${MOUNTS},${HF_HOME_HOST}:/workspace/hf_home"
 
-export HF_HOME="/workspace/data/hf_home"
+# One shared HuggingFace cache at the storage root. data/hf_home was a full
+# duplicate of it (same model, same blobs) and was deleted 2026-08-13.
+export HF_HOME="/workspace/hf_home"
 export PYTHONPATH="/workspace/InterPLM"
 
 mkdir -p logs

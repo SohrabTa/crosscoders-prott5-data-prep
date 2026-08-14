@@ -23,6 +23,7 @@ INTERPLM_DIR="/dss/dsshome1/08/ga25ley2/code/InterPLM"
 CROSSCODE_DIR="/dss/dsshome1/08/ga25ley2/code/crosscode"
 SCC_DIR="/dss/dsshome1/08/ga25ley2/code/sparse-crosscoders-prott5"
 DATA_DIR="/dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/data"
+HF_HOME_HOST="/dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/hf_home"
 CKPT_DIR="/dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/model_checkpoints"
 
 MOUNTS="${INTERPLM_DIR}:/workspace/InterPLM"
@@ -33,10 +34,13 @@ MOUNTS="${MOUNTS},${SCC_DIR}:/workspace/scc"
 
 CROSSCODER_DIR="/workspace/model_checkpoints/crosscoder_l8192_k32_bs512_baseline_2026-05-09_11-50-43/final_epoch_0_step_2519836"
 MATCHES="/workspace/data/proteingym/concept_matches.csv"
-DMS_DIR="/workspace/data/DMS_ProteinGym_substitutions"
+DMS_DIR="/workspace/data/external/DMS_ProteinGym_substitutions"
 OUTPUT_DIR="/workspace/data/proteingym/full_feature_spearman_baseline"
+MOUNTS="${MOUNTS},${HF_HOME_HOST}:/workspace/hf_home"
 
-export HF_HOME="/workspace/data/hf_home"
+# One shared HuggingFace cache at the storage root. data/hf_home was a full
+# duplicate of it (same model, same blobs) and was deleted 2026-08-13.
+export HF_HOME="/workspace/hf_home"
 export PYTHONPATH="/workspace/InterPLM"
 
 mkdir -p logs
