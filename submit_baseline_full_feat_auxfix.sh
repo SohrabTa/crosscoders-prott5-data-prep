@@ -2,8 +2,8 @@
 #SBATCH -p lrz-hgx-h100-94x4
 #SBATCH --gres=gpu:1
 #SBATCH -t 24:00:00
-#SBATCH -o logs/proteingym_baseline_full_feat_%j.out
-#SBATCH -e logs/proteingym_baseline_full_feat_%j.err
+#SBATCH -o /dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/logs/sparse-crosscoders-prott5/proteingym_baseline_full_feat_%j.out
+#SBATCH -e /dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/logs/sparse-crosscoders-prott5/proteingym_baseline_full_feat_%j.err
 
 # Full 8192-feature ProteinGym scan: per-(assay, feature) Spearman over all 217 assays
 # (213 after the 2048-aa cap). Auxfix re-run; eval-independent matches built inline from
@@ -46,7 +46,6 @@ MOUNTS="${MOUNTS},${HF_HOME_HOST}:/workspace/hf_home"
 export HF_HOME="/workspace/hf_home"
 export PYTHONPATH="/workspace/InterPLM"
 
-mkdir -p logs
 
 echo "Starting ProteinGym full-feature scan on $(hostname) at $(date)"
 START_TIME=$(date +%s)

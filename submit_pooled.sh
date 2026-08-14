@@ -2,8 +2,8 @@
 #SBATCH -p lrz-hgx-h100-94x4
 #SBATCH --gres=gpu:1
 #SBATCH -t 13:00:00
-#SBATCH -o logs/proteingym_pooled_%j.out
-#SBATCH -e logs/proteingym_pooled_%j.err
+#SBATCH -o /dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/logs/sparse-crosscoders-prott5/proteingym_pooled_%j.out
+#SBATCH -e /dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/logs/sparse-crosscoders-prott5/proteingym_pooled_%j.err
 
 # Harvest full-sequence pooled crosscoder metrics for ProteinGym matched assays.
 # Computes 8 gated + 8 dense per-(variant, feature) summaries (Δ at position
@@ -42,7 +42,6 @@ MOUNTS="${MOUNTS},${HF_HOME_HOST}:/workspace/hf_home"
 export HF_HOME="/workspace/hf_home"
 export PYTHONPATH="/workspace/InterPLM"
 
-mkdir -p logs
 
 echo "Starting ProteinGym pooled-metric harvest on $(hostname) at $(date)"
 START_TIME=$(date +%s)

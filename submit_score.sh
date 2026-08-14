@@ -2,8 +2,8 @@
 #SBATCH -p lrz-hgx-h100-94x4
 #SBATCH --gres=gpu:1
 #SBATCH -t 15:00:00
-#SBATCH -o logs/proteingym_score_%j.out
-#SBATCH -e logs/proteingym_score_%j.err
+#SBATCH -o /dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/logs/sparse-crosscoders-prott5/proteingym_score_%j.out
+#SBATCH -e /dss/dssfs02/lwp-dss-0001/pn67na/pn67na-dss-0000/ga25ley2/logs/sparse-crosscoders-prott5/proteingym_score_%j.err
 
 # Score crosscoder features against the ProteinGym DMS substitutions benchmark.
 # By default scores ALL (assay, concept) pairs from --matches (138 assays /
@@ -56,7 +56,6 @@ OUTPUT_DIR="/workspace/data/proteingym/scoring_topk"
 export HF_HOME="/workspace/hf_home"
 export PYTHONPATH="/workspace/InterPLM"
 
-mkdir -p logs
 
 echo "Starting ProteinGym crosscoder scoring on $(hostname) at $(date)"
 START_TIME=$(date +%s)
