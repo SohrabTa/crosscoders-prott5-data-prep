@@ -137,7 +137,7 @@ def embed_fasta_to_shards(
     device: str,
     model_name: str = "Rostlab/prot_t5_xl_uniref50",
     seqs_per_shard: int = 64,
-    max_seq_len: int = 512,
+    max_seq_len: int | None = None,
     max_tokens: int | None = None,
     store_dtype: torch.dtype = torch.float16,
 ) -> Path:
@@ -149,9 +149,17 @@ def embed_fasta_to_shards(
     Memory-bounded: embeds `seqs_per_shard` sequences at a time and writes each
     group as its own shard, so peak RAM is one group's activations + the model,
     not the whole calibration set. Stops once `max_tokens` tokens are written.
-    Sequences are capped at `max_seq_len` (default 512) to match the train-time
-    sequence-length cap (uniref50_length_512) and bound per-shard memory. Shards
-    are stored as float16 by default (halves disk; cast back to model dtype on load).
+    Shards are stored as float16 by default (halves disk; cast back to model dtype
+    on load).
+
+    `max_seq_len` truncates each sequence and now defaults to OFF. It used to
+    default to 512, justified as matching the train-time cap. That was wrong twice
+    over: the corpora we use are already length-limited, so it removed nothing on
+    them (checked 2026-08-15 -- the score345 eval download has max Length 512 and 0
+    proteins above it, and the training corpus is uniref50_length_512), and where it
+    *would* bite it silently changes what theta is measured on, which is exactly the
+    quantity this script exists to get right. Truncating a protein also feeds the
+    model an artificial C-terminus. Pass it explicitly if you ever want it.
     """
     from interplm.embedders.prott5 import ProtT5CrosscoderEmbedder
 
@@ -167,7 +175,8 @@ def embed_fasta_to_shards(
         raise RuntimeError(f"No sequences parsed from {fasta}")
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    log.info("Embedding up to %d seqs (cap %d aa) via %s -> %s", len(seqs), max_seq_len, model_name, out_dir)
+    log.info("Embedding up to %d seqs (length cap: %s) via %s -> %s",
+             len(seqs), max_seq_len or "none", model_name, out_dir)
     embedder = ProtT5CrosscoderEmbedder(model_name=model_name, device=device)
 
     written, shard_i = 0, 0
@@ -363,8 +372,10 @@ def main():
                     help="ProtT5 model for --fasta embedding (match training)")
     ap.add_argument("--seqs_per_shard", type=int, default=64,
                     help="sequences embedded per shard when using --fasta (memory knob)")
-    ap.add_argument("--max_seq_len", type=int, default=512,
-                    help="cap each sequence length when using --fasta (match train length cap)")
+    ap.add_argument("--max_seq_len", type=int, default=None,
+                    help="truncate each sequence when using --fasta. OFF by default: do not "
+                         "cut proteins. Our corpora are already length-limited, so this only "
+                         "ever changes what theta is measured on.")
     ap.add_argument("--mode", choices=["global", "decoder_norm"], default="global")
     ap.add_argument("--k", type=int, default=32, help="k_per_example used at training")
     ap.add_argument("--batch_tokens", type=int, default=512,
